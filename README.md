@@ -1,4 +1,4 @@
-# nupho
+# nupho - Sophomore's Natural Language Understander
 
 ## Setup Environment
 
