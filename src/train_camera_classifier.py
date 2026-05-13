@@ -28,7 +28,7 @@ def load_jsonl(path: str):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", default="data/camera_dataset.jsonl")
+    parser.add_argument("--data", default="data/dataset.jsonl")
     parser.add_argument("--label2id", default="data/label2id.json")
     parser.add_argument("--model_name", default="hfl/chinese-macbert-base")
     parser.add_argument("--output_dir", default="outputs/camera-bert")
