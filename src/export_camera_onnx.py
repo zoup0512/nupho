@@ -91,6 +91,7 @@ def main():
         },
         opset_version=args.opset,
         do_constant_folding=True,
+        external_data=False,
     )
 
     print(f"ONNX model saved to: {onnx_path}")
