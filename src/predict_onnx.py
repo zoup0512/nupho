@@ -22,7 +22,7 @@ def load_id2label(path: Path):
 def predict(text: str, model_dir: str = "outputs/android", max_length: int = 64):
     model_dir = Path(model_dir)
 
-    onnx_path = model_dir / "camera_bert.onnx"
+    onnx_path = model_dir / "bert.onnx"
     id2label_path = model_dir / "id2label.json"
 
     if not onnx_path.exists():

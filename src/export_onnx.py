@@ -32,9 +32,9 @@ def copy_if_exists(src: Path, dst: Path):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model_dir", default="outputs/camera-bert")
+    parser.add_argument("--model_dir", default="outputs/bert")
     parser.add_argument("--output_dir", default="outputs/android")
-    parser.add_argument("--onnx_name", default="camera_bert.onnx")
+    parser.add_argument("--onnx_name", default="bert.onnx")
     parser.add_argument("--max_length", type=int, default=64)
     parser.add_argument("--opset", type=int, default=17)
     args = parser.parse_args()
@@ -131,10 +131,10 @@ def main():
             "architectures": config.get("architectures"),
         }
 
-        with open(output_dir / "camera_model_config.json", "w", encoding="utf-8") as f:
+        with open(output_dir / "model_config.json", "w", encoding="utf-8") as f:
             json.dump(android_config, f, ensure_ascii=False, indent=2)
 
-        print(f"Saved: {output_dir / 'camera_model_config.json'}")
+        print(f"Saved: {output_dir / 'model_config.json'}")
 
     print("Done.")
     print()

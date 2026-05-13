@@ -31,7 +31,7 @@ def main():
     parser.add_argument("--data", default="data/dataset.jsonl")
     parser.add_argument("--label2id", default="data/label2id.json")
     parser.add_argument("--model_name", default="hfl/chinese-macbert-base")
-    parser.add_argument("--output_dir", default="outputs/camera-bert")
+    parser.add_argument("--output_dir", default="outputs/bert")
     parser.add_argument("--max_length", type=int, default=64)
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--batch_size", type=int, default=16)

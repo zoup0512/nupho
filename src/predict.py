@@ -18,7 +18,7 @@ def load_id2label(model_dir: Path, model):
     return {int(k): v for k, v in model.config.id2label.items()}
 
 
-def predict(text: str, model_dir: str = "outputs/camera-bert", max_length: int = 64):
+def predict(text: str, model_dir: str = "outputs/bert", max_length: int = 64):
     model_path = Path(model_dir)
 
     load_start = time.perf_counter()
@@ -66,7 +66,7 @@ def predict(text: str, model_dir: str = "outputs/camera-bert", max_length: int =
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--text", type=str, required=True)
-    parser.add_argument("--model_dir", type=str, default="outputs/camera-bert")
+    parser.add_argument("--model_dir", type=str, default="outputs/bert")
     parser.add_argument("--max_length", type=int, default=64)
     args = parser.parse_args()
 
