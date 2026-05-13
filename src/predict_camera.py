@@ -1,6 +1,7 @@
 import argparse
 import json
 from pathlib import Path
+import time
 
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
@@ -20,6 +21,7 @@ def load_id2label(model_dir: Path, model):
 def predict(text: str, model_dir: str = "outputs/camera-bert", max_length: int = 64):
     model_path = Path(model_dir)
 
+    load_start = time.perf_counter()
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     model = AutoModelForSequenceClassification.from_pretrained(model_path)
 
@@ -28,7 +30,9 @@ def predict(text: str, model_dir: str = "outputs/camera-bert", max_length: int =
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
     model.eval()
+    load_time = time.perf_counter() - load_start
 
+    infer_start = time.perf_counter()
     inputs = tokenizer(
         text,
         truncation=True,
@@ -48,11 +52,14 @@ def predict(text: str, model_dir: str = "outputs/camera-bert", max_length: int =
 
     pred_id = pred_id.item()
     confidence = confidence.item()
+    inference_time = time.perf_counter() - infer_start
 
     return {
         "text": text,
         "label": id2label[pred_id],
         "confidence": round(confidence, 4),
+        "load_time_sec": round(load_time, 4),
+        "inference_time_sec": round(inference_time, 4),
     }
 
 
