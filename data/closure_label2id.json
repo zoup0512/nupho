@@ -1,0 +1,18 @@
+{
+    "closure.open_left_front_door": 0,
+    "closure.close_left_front_door": 1,
+    "closure.open_right_front_door": 2,
+    "closure.close_right_front_door": 3,
+    "closure.open_left_rear_door": 4,
+    "closure.close_left_rear_door": 5,
+    "closure.open_right_rear_door": 6,
+    "closure.close_right_rear_door": 7,
+    "closure.open_all_doors": 8,
+    "closure.close_all_doors": 9,
+    "closure.open_hood": 10,
+    "closure.close_hood": 11,
+    "closure.open_trunk": 12,
+    "closure.close_trunk": 13,
+    "closure.open_fuel_cap": 14,
+    "closure.close_fuel_cap": 15
+}

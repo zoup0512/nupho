@@ -1,0 +1,66 @@
+{
+  "id": "body_actions",
+  "name": "四门三盖开合意图",
+  "description": "用户是否要求控制车门/引擎盖/后盖/油箱盖开合",
+  "dataSchema": {
+    "type": "object",
+    "properties": {
+      "actions": {
+        "type": "array",
+        "description": "开合动作列表",
+        "items": {
+          "type": "object",
+          "properties": {
+            "target": {
+              "type": "string",
+              "enum": [
+                "left_front_door",
+                "right_front_door",
+                "left_rear_door",
+                "right_rear_door",
+                "all_doors",
+                "hood",
+                "trunk",
+                "fuel_cap"
+              ]
+            },
+            "action": {
+              "type": "string",
+              "enum": ["open", "close"]
+            }
+          },
+          "required": ["target", "action"]
+        }
+      }
+    },
+    "required": ["actions"]
+  },
+  "examples": [
+    {
+      "input": "打开左前门和引擎盖",
+      "output": {
+        "use": true,
+        "content": "打开左前门和引擎盖",
+        "data": {
+          "actions": [
+            { "target": "left_front_door", "action": "open" },
+            { "target": "hood", "action": "open" }
+          ]
+        }
+      }
+    },
+    {
+      "input": "关闭所有车门，油箱盖也关掉",
+      "output": {
+        "use": true,
+        "content": "关闭所有车门并关闭油箱盖",
+        "data": {
+          "actions": [
+            { "target": "all_doors", "action": "close" },
+            { "target": "fuel_cap", "action": "close" }
+          ]
+        }
+      }
+    }
+  ]
+}

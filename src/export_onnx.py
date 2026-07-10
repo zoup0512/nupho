@@ -5,21 +5,42 @@ from pathlib import Path
 
 import torch
 from torch import nn
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from transformers import AutoModel, AutoTokenizer
 
 
-class BertClassifierOnnxWrapper(nn.Module):
-    def __init__(self, model: nn.Module):
+class MultiTaskBert(nn.Module):
+    def __init__(self, model_name, num_camera_labels, num_closure_labels, num_domains):
+        super().__init__()
+        self.bert = AutoModel.from_pretrained(model_name)
+        hidden = self.bert.config.hidden_size
+        self.dropout = nn.Dropout(0.1)
+        self.domain_head = nn.Linear(hidden, num_domains)
+        self.camera_head = nn.Linear(hidden, num_camera_labels)
+        self.closure_head = nn.Linear(hidden, num_closure_labels)
+
+    def forward(self, input_ids, attention_mask, token_type_ids):
+        kwargs = {"input_ids": input_ids, "attention_mask": attention_mask}
+        if token_type_ids is not None:
+            kwargs["token_type_ids"] = token_type_ids
+
+        outputs = self.bert(**kwargs)
+        pooled = self.dropout(outputs.last_hidden_state[:, 0])
+
+        return {
+            "domain_logits": self.domain_head(pooled),
+            "camera_logits": self.camera_head(pooled),
+            "closure_logits": self.closure_head(pooled),
+        }
+
+
+class OnnxWrapper(nn.Module):
+    def __init__(self, model: MultiTaskBert):
         super().__init__()
         self.model = model
 
     def forward(self, input_ids, attention_mask, token_type_ids):
-        outputs = self.model(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            token_type_ids=token_type_ids,
-        )
-        return outputs.logits
+        out = self.model(input_ids, attention_mask, token_type_ids)
+        return out["domain_logits"], out["camera_logits"], out["closure_logits"]
 
 
 def copy_if_exists(src: Path, dst: Path):
@@ -45,15 +66,29 @@ def main():
 
     onnx_path = output_dir / args.onnx_name
 
+    with open(model_dir / "model_config.json", "r", encoding="utf-8") as f:
+        config = json.load(f)
+
+    model_name = config["model_name"]
+    num_camera_labels = config["num_camera_labels"]
+    num_closure_labels = config["num_closure_labels"]
+    num_domains = config["num_domains"]
+
     print(f"Loading model from: {model_dir}")
 
     tokenizer = AutoTokenizer.from_pretrained(model_dir)
-    model = AutoModelForSequenceClassification.from_pretrained(model_dir)
 
+    model = MultiTaskBert(
+        model_name,
+        num_camera_labels=num_camera_labels,
+        num_closure_labels=num_closure_labels,
+        num_domains=num_domains,
+    )
+    model.load_state_dict(torch.load(model_dir / "model.pt", map_location="cpu"))
     model.eval()
     model.cpu()
 
-    wrapper = BertClassifierOnnxWrapper(model)
+    wrapper = OnnxWrapper(model)
     wrapper.eval()
     wrapper.cpu()
 
@@ -82,12 +117,14 @@ def main():
         args=(input_ids, attention_mask, token_type_ids),
         f=str(onnx_path),
         input_names=["input_ids", "attention_mask", "token_type_ids"],
-        output_names=["logits"],
+        output_names=["domain_logits", "camera_logits", "closure_logits"],
         dynamic_axes={
             "input_ids": {0: "batch_size", 1: "sequence_length"},
             "attention_mask": {0: "batch_size", 1: "sequence_length"},
             "token_type_ids": {0: "batch_size", 1: "sequence_length"},
-            "logits": {0: "batch_size"},
+            "domain_logits": {0: "batch_size"},
+            "camera_logits": {0: "batch_size"},
+            "closure_logits": {0: "batch_size"},
         },
         opset_version=args.opset,
         do_constant_folding=True,
@@ -118,23 +155,15 @@ def main():
     )
     copy_if_exists(model_dir / "id2label.json", output_dir / "id2label.json")
     copy_if_exists(model_dir / "label2id.json", output_dir / "label2id.json")
-
-    config_path = model_dir / "config.json"
-    if config_path.exists():
-        with open(config_path, "r", encoding="utf-8") as f:
-            config = json.load(f)
-
-        android_config = {
-            "max_length": args.max_length,
-            "num_labels": config.get("num_labels"),
-            "model_type": config.get("model_type"),
-            "architectures": config.get("architectures"),
-        }
-
-        with open(output_dir / "model_config.json", "w", encoding="utf-8") as f:
-            json.dump(android_config, f, ensure_ascii=False, indent=2)
-
-        print(f"Saved: {output_dir / 'model_config.json'}")
+    copy_if_exists(model_dir / "id2domain.json", output_dir / "id2domain.json")
+    copy_if_exists(model_dir / "domain2id.json", output_dir / "domain2id.json")
+    copy_if_exists(
+        model_dir / "closure_id2label.json", output_dir / "closure_id2label.json"
+    )
+    copy_if_exists(
+        model_dir / "closure_label2id.json", output_dir / "closure_label2id.json"
+    )
+    copy_if_exists(model_dir / "model_config.json", output_dir / "model_config.json")
 
     print("Done.")
     print()
@@ -142,6 +171,9 @@ def main():
     print(f"- {onnx_path}")
     print(f"- {output_dir / 'vocab.txt'}")
     print(f"- {output_dir / 'id2label.json'}")
+    print(f"- {output_dir / 'id2domain.json'}")
+    print(f"- {output_dir / 'closure_id2label.json'}")
+    print(f"- {output_dir / 'model_config.json'}")
 
 
 if __name__ == "__main__":
