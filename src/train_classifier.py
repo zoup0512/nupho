@@ -33,8 +33,8 @@ def main():
     parser.add_argument("--model_name", default="hfl/chinese-macbert-base")
     parser.add_argument("--output_dir", default="outputs/bert")
     parser.add_argument("--max_length", type=int, default=64)
-    parser.add_argument("--epochs", type=int, default=20)
-    parser.add_argument("--batch_size", type=int, default=16)
+    parser.add_argument("--epochs", type=int, default=15)
+    parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--lr", type=float, default=2e-5)
     args = parser.parse_args()
 

@@ -1,0 +1,17 @@
+{
+    "camera.switch_front": 0,
+    "camera.switch_rear": 1,
+    "camera.switch_left": 2,
+    "camera.switch_right": 3,
+    "camera.switch_top": 4,
+    "camera.switch_interior": 5,
+    "camera.switch_default": 6,
+    "camera.zoom_in": 7,
+    "camera.zoom_out": 8,
+    "camera.adjust_left": 9,
+    "camera.adjust_right": 10,
+    "camera.adjust_up": 11,
+    "camera.adjust_down": 12,
+    "camera.adjust_around": 13,
+    "unknown": 14
+}
