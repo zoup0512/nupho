@@ -44,10 +44,11 @@ def predict(text: str, model_dir: str = "outputs/bert", max_length: int = 64):
         num_domains=num_domains,
     )
     model.load_state_dict(
-        torch.load(model_path / "model.pt", map_location="cpu", weights_only=True)
+        torch.load(model_path / "model.pt", map_location="cpu", weights_only=True),
+        strict=False,
     )
 
-    id2label = load_json(model_path / "id2label.json")
+    id2label = load_json(model_path / "camera_id2label.json")
     id2label = {int(k): v for k, v in id2label.items()}
 
     id2domain = load_json(model_path / "id2domain.json")
@@ -103,21 +104,27 @@ def predict(text: str, model_dir: str = "outputs/bert", max_length: int = 64):
 
     elif domain_id == 1:  # closure
         closure_probs = torch.sigmoid(closure_logits).squeeze(0)
-        actions = []
+        raw_actions = []
         for i in range(len(closure_probs)):
             if closure_probs[i] > 0.5:
                 label = closure_id2label[i]
                 parts = label.replace("closure.", "").split("_", 1)
                 action = parts[0]
                 target = parts[1] if len(parts) > 1 else ""
-                actions.append(
+                raw_actions.append(
                     {
                         "target": target,
                         "action": action,
                         "confidence": round(closure_probs[i].item(), 4),
                     }
                 )
-        result["actions"] = actions
+        # For same target, keep only the action with higher confidence
+        best_by_target = {}
+        for a in raw_actions:
+            t = a["target"]
+            if t not in best_by_target or a["confidence"] > best_by_target[t]["confidence"]:
+                best_by_target[t] = a
+        result["actions"] = list(best_by_target.values())
 
     return result
 

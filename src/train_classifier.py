@@ -15,6 +15,7 @@ from transformers import (
     Trainer,
     TrainingArguments,
 )
+from peft import LoraConfig, get_peft_model
 
 
 def load_jsonl(path: str):
@@ -29,7 +30,8 @@ def load_jsonl(path: str):
 
 
 class MultiTaskBert(nn.Module):
-    def __init__(self, model_name, num_camera_labels, num_closure_labels, num_domains):
+    def __init__(self, model_name, num_camera_labels, num_closure_labels, num_domains,
+                 closure_pos_weight=None):
         super().__init__()
         self.bert = AutoModel.from_pretrained(model_name)
         hidden = self.bert.config.hidden_size
@@ -37,6 +39,7 @@ class MultiTaskBert(nn.Module):
         self.domain_head = nn.Linear(hidden, num_domains)
         self.camera_head = nn.Linear(hidden, num_camera_labels)
         self.closure_head = nn.Linear(hidden, num_closure_labels)
+        self.closure_pos_weight = closure_pos_weight
 
     def forward(
         self,
@@ -77,8 +80,13 @@ class MultiTaskBert(nn.Module):
             loss_closure = torch.tensor(0.0, device=domain_logits.device)
             closure_mask = domain_labels == 1
             if closure_mask.any():
+                pw = self.closure_pos_weight
+                if pw is not None and pw.device != closure_logits.device:
+                    pw = pw.to(closure_logits.device)
                 loss_closure = F.binary_cross_entropy_with_logits(
-                    closure_logits[closure_mask], closure_labels[closure_mask].float()
+                    closure_logits[closure_mask],
+                    closure_labels[closure_mask].float(),
+                    pos_weight=pw,
                 )
 
             result["loss"] = loss_domain + loss_camera + loss_closure
@@ -87,9 +95,10 @@ class MultiTaskBert(nn.Module):
 
 
 class MultiTaskDataCollator:
-    def __init__(self, tokenizer, num_closure_labels, max_length=64):
+    def __init__(self, tokenizer, num_closure_labels, closure_label2id, max_length=64):
         self.tokenizer = tokenizer
         self.num_closure_labels = num_closure_labels
+        self.closure_label2id = closure_label2id
         self.max_length = max_length
 
     def __call__(self, features):
@@ -116,10 +125,10 @@ class MultiTaskDataCollator:
         for f in features:
             camera_labels.append(f.get("camera_label", -1))
             vec = [0.0] * self.num_closure_labels
-            for a in f.get("closure_actions", []):
+            for a in (f.get("closure_actions") or []):
                 key = f"closure.{a['action']}_{a['target']}"
-                if key in f.get("_closure_label2id", {}):
-                    vec[f["_closure_label2id"][key]] = 1.0
+                if key in self.closure_label2id:
+                    vec[self.closure_label2id[key]] = 1.0
             closure_labels.append(vec)
 
         batch["camera_labels"] = torch.tensor(camera_labels, dtype=torch.long)
@@ -131,7 +140,7 @@ class MultiTaskDataCollator:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", default="data/dataset.jsonl")
-    parser.add_argument("--label2id", default="data/label2id.json")
+    parser.add_argument("--camera_label2id", default="data/camera_label2id.json")
     parser.add_argument("--domain2id", default="data/domain2id.json")
     parser.add_argument("--closure_label2id", default="data/closure_label2id.json")
     parser.add_argument("--model_name", default="hfl/chinese-macbert-base")
@@ -140,35 +149,37 @@ def main():
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--lr", type=float, default=2e-5)
+    parser.add_argument("--lora_r", type=int, default=8)
+    parser.add_argument("--lora_alpha", type=int, default=16)
+    parser.add_argument("--lora_dropout", type=float, default=0.05)
     args = parser.parse_args()
 
     data_path = Path(args.data)
-    label_path = Path(args.label2id)
+    camera_label_path = Path(args.camera_label2id)
     domain_path = Path(args.domain2id)
     closure_label_path = Path(args.closure_label2id)
 
     rows = load_jsonl(data_path)
 
-    with open(label_path, "r", encoding="utf-8") as f:
-        label2id = json.load(f)
+    with open(camera_label_path, "r", encoding="utf-8") as f:
+        camera_label2id = json.load(f)
     with open(domain_path, "r", encoding="utf-8") as f:
         domain2id = json.load(f)
     with open(closure_label_path, "r", encoding="utf-8") as f:
         closure_label2id = json.load(f)
 
-    id2label = {v: k for k, v in label2id.items()}
+    camera_id2label = {v: k for k, v in camera_label2id.items()}
     id2domain = {v: k for k, v in domain2id.items()}
 
     processed = []
     for row in rows:
         item = {"text": row["text"], "domain_id": domain2id[row["domain"]]}
         if row["domain"] == "camera":
-            item["camera_label"] = label2id[row["label"]]
+            item["camera_label"] = camera_label2id[row["label"]]
         else:
             item["camera_label"] = -1
         if row["domain"] == "closure":
             item["closure_actions"] = row.get("actions", [])
-        item["_closure_label2id"] = closure_label2id
         processed.append(item)
 
     train_proc, dev_proc = train_test_split(
@@ -178,29 +189,46 @@ def main():
         stratify=[p["domain_id"] for p in processed],
     )
 
-    train_ds = Dataset.from_list([
-        {k: v for k, v in p.items() if k != "_closure_label2id"} for p in train_proc
-    ])
-    dev_ds = Dataset.from_list([
-        {k: v for k, v in p.items() if k != "_closure_label2id"} for p in dev_proc
-    ])
-
-    for p in train_proc:
-        p.pop("_closure_label2id", None)
-    for p in dev_proc:
-        p.pop("_closure_label2id", None)
+    train_ds = Dataset.from_list(train_proc)
+    dev_ds = Dataset.from_list(dev_proc)
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
 
+    closure_pos_counts = [0] * len(closure_label2id)
+    closure_total = 0
+    for p in train_proc:
+        if p["domain_id"] == 1:
+            closure_total += 1
+            for a in (p.get("closure_actions") or []):
+                key = f"closure.{a['action']}_{a['target']}"
+                if key in closure_label2id:
+                    closure_pos_counts[closure_label2id[key]] += 1
+    closure_pos_weight = torch.tensor([
+        closure_total / max(c, 1) for c in closure_pos_counts
+    ], dtype=torch.float)
+    print(f"Closure pos_weight: {closure_pos_weight.tolist()}")
+
     model = MultiTaskBert(
         args.model_name,
-        num_camera_labels=len(label2id),
+        num_camera_labels=len(camera_label2id),
         num_closure_labels=len(closure_label2id),
         num_domains=len(domain2id),
+        closure_pos_weight=closure_pos_weight,
     )
 
+    lora_config = LoraConfig(
+        r=args.lora_r,
+        lora_alpha=args.lora_alpha,
+        lora_dropout=args.lora_dropout,
+        target_modules=["query", "key", "value", "dense"],
+        modules_to_save=["domain_head", "camera_head", "closure_head"],
+    )
+    model = get_peft_model(model, lora_config)
+    model.print_trainable_parameters()
+
     collator = MultiTaskDataCollator(
-        tokenizer, num_closure_labels=len(closure_label2id), max_length=args.max_length
+        tokenizer, num_closure_labels=len(closure_label2id),
+        closure_label2id=closure_label2id, max_length=args.max_length
     )
 
     def compute_metrics(eval_pred):
@@ -309,13 +337,15 @@ def main():
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    torch.save(model.state_dict(), output_dir / "model.pt")
+    print("Merging LoRA weights into base model...")
+    merged_model = model.merge_and_unload()
+    torch.save(merged_model.state_dict(), output_dir / "model.pt")
     tokenizer.save_pretrained(output_dir)
 
-    with open(output_dir / "label2id.json", "w", encoding="utf-8") as f:
-        json.dump(label2id, f, ensure_ascii=False, indent=2)
-    with open(output_dir / "id2label.json", "w", encoding="utf-8") as f:
-        json.dump(id2label, f, ensure_ascii=False, indent=2)
+    with open(output_dir / "camera_label2id.json", "w", encoding="utf-8") as f:
+        json.dump(camera_label2id, f, ensure_ascii=False, indent=2)
+    with open(output_dir / "camera_id2label.json", "w", encoding="utf-8") as f:
+        json.dump(camera_id2label, f, ensure_ascii=False, indent=2)
     with open(output_dir / "domain2id.json", "w", encoding="utf-8") as f:
         json.dump(domain2id, f, ensure_ascii=False, indent=2)
     with open(output_dir / "id2domain.json", "w", encoding="utf-8") as f:
@@ -329,7 +359,7 @@ def main():
 
     config = {
         "model_name": args.model_name,
-        "num_camera_labels": len(label2id),
+        "num_camera_labels": len(camera_label2id),
         "num_closure_labels": len(closure_label2id),
         "num_domains": len(domain2id),
         "max_length": args.max_length,

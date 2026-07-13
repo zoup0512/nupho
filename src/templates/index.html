@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>语义解析测试平台</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "Microsoft YaHei", sans-serif; background: #f0f2f5; color: #333; }
+
+.header { background: #1a1a2e; color: #fff; padding: 20px 30px; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { font-size: 22px; }
+.header .stats { font-size: 14px; opacity: 0.8; }
+
+.container { max-width: 900px; margin: 30px auto; padding: 0 20px; }
+
+.progress-bar { background: #e0e0e0; border-radius: 10px; height: 8px; margin-bottom: 20px; overflow: hidden; }
+.progress-fill { background: #4f46e5; height: 100%; border-radius: 10px; transition: width 0.3s; }
+
+.card { background: #fff; border-radius: 12px; padding: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+
+.test-info { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; }
+.test-index { background: #4f46e5; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+.test-domain-tag { padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+.domain-camera { background: #dbeafe; color: #1e40af; }
+.domain-closure { background: #dcfce7; color: #166534; }
+.domain-unknown { background: #f3f4f6; color: #6b7280; }
+
+.test-text { font-size: 20px; font-weight: 600; margin-bottom: 20px; padding: 16px; background: #f8fafc; border-radius: 8px; border-left: 4px solid #4f46e5; }
+
+.section-title { font-size: 14px; font-weight: 600; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.prediction-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+.prediction-box.wrong { background: #fef2f2; border-color: #fecaca; }
+.pred-row { display: flex; gap: 8px; margin-bottom: 6px; }
+.pred-label { font-weight: 600; min-width: 80px; color: #6b7280; }
+.pred-value { font-weight: 500; }
+
+.expected-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+
+.actions-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.action-chip { background: #e0e7ff; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; }
+.action-chip.expected { background: #d1fae5; }
+.confidence { font-size: 11px; color: #6b7280; margin-left: 4px; }
+
+.feedback-section { border-top: 2px solid #f0f0f0; padding-top: 20px; }
+.feedback-buttons { display: flex; gap: 12px; margin-bottom: 16px; }
+.btn { padding: 12px 28px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-correct { background: #16a34a; color: #fff; }
+.btn-correct:hover { background: #15803d; }
+.btn-wrong { background: #dc2626; color: #fff; }
+.btn-wrong:hover { background: #b91c1c; }
+.btn-skip { background: #e5e7eb; color: #6b7280; }
+.btn-skip:hover { background: #d1d5db; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.correction-form { display: none; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+.correction-form.active { display: block; }
+.form-group { margin-bottom: 12px; }
+.form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #6b7280; }
+.form-group select, .form-group input { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; }
+.action-edit-row { display: flex; gap: 8px; margin-bottom: 6px; align-items: center; }
+.action-edit-row select { width: auto; min-width: 120px; }
+.btn-add-action { background: #e0e7ff; color: #4f46e5; padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.btn-remove-action { background: #fee2e2; color: #dc2626; padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.btn-submit-correction { background: #f59e0b; color: #fff; padding: 10px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-top: 8px; }
+
+.nav-buttons { display: flex; justify-content: space-between; margin-top: 20px; }
+.btn-nav { background: #4f46e5; color: #fff; padding: 10px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+.btn-nav:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.summary { display: none; text-align: center; padding: 40px; }
+.summary.active { display: block; }
+.summary h2 { font-size: 28px; margin-bottom: 16px; }
+.summary-stats { display: flex; justify-content: center; gap: 30px; margin-bottom: 30px; }
+.summary-stat { text-align: center; }
+.summary-stat .num { font-size: 36px; font-weight: 700; }
+.summary-stat .label { font-size: 14px; color: #6b7280; }
+.summary-stat .num.green { color: #16a34a; }
+.summary-stat .num.red { color: #dc2626; }
+
+.retrain-section { margin-top: 30px; padding: 20px; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.retrain-section h3 { margin-bottom: 12px; }
+.retrain-section p { color: #6b7280; font-size: 14px; margin-bottom: 12px; }
+.btn-retrain { background: #7c3aed; color: #fff; padding: 12px 28px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px; }
+.btn-retrain:hover { background: #6d28d9; }
+.btn-clear { background: #f3f4f6; color: #6b7280; padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; margin-left: 10px; }
+
+.toast { position: fixed; top: 20px; right: 20px; padding: 12px 24px; border-radius: 8px; color: #fff; font-weight: 500; display: none; z-index: 999; }
+.toast.show { display: block; }
+.toast.success { background: #16a34a; }
+.toast.error { background: #dc2626; }
+.toast.info { background: #4f46e5; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>语义解析测试平台</h1>
+  <div class="stats" id="headerStats">加载中...</div>
+</div>
+
+<div class="container">
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width: 0%"></div></div>
+
+  <div id="testView">
+    <div class="card">
+      <div class="test-info">
+        <span class="test-index" id="testIndex">-</span>
+        <span class="test-domain-tag" id="testDomainTag">-</span>
+      </div>
+      <div class="test-text" id="testText">加载中...</div>
+
+      <div class="section-title">模型预测</div>
+      <div class="prediction-box" id="predictionBox">
+        <div class="pred-row"><span class="pred-label">Domain:</span> <span class="pred-value" id="predDomain">-</span></div>
+        <div class="pred-row" id="predLabelRow" style="display:none"><span class="pred-label">Label:</span> <span class="pred-value" id="predLabel">-</span></div>
+        <div class="pred-row" id="predActionsRow" style="display:none"><span class="pred-label">Actions:</span> <div class="actions-list" id="predActions"></div></div>
+      </div>
+
+      <div class="section-title">期望结果</div>
+      <div class="expected-box">
+        <div class="pred-row"><span class="pred-label">Domain:</span> <span class="pred-value" id="expDomain">-</span></div>
+        <div class="pred-row" id="expLabelRow" style="display:none"><span class="pred-label">Label:</span> <span class="pred-value" id="expLabel">-</span></div>
+        <div class="pred-row" id="expActionsRow" style="display:none"><span class="pred-label">Actions:</span> <div class="actions-list" id="expActions"></div></div>
+      </div>
+
+      <div class="feedback-section">
+        <div class="section-title">反馈</div>
+        <div class="feedback-buttons">
+          <button class="btn btn-correct" id="btnCorrect" onclick="submitFeedback(true)">✓ 解析正确</button>
+          <button class="btn btn-wrong" id="btnWrong" onclick="showCorrectionForm()">✗ 解析错误</button>
+          <button class="btn btn-skip" onclick="nextTest()">跳过</button>
+        </div>
+
+        <div class="correction-form" id="correctionForm">
+          <div class="form-group">
+            <label>正确 Domain</label>
+            <select id="corrDomain" onchange="updateCorrectionFields()">
+              <option value="camera">camera</option>
+              <option value="closure">closure</option>
+              <option value="unknown">unknown</option>
+            </select>
+          </div>
+          <div class="form-group" id="corrLabelGroup" style="display:none">
+            <label>正确 Label (camera)</label>
+            <input type="text" id="corrLabel" placeholder="如 camera.switch_front">
+          </div>
+          <div class="form-group" id="corrActionsGroup" style="display:none">
+            <label>正确 Actions (closure)</label>
+            <div id="corrActionsList"></div>
+            <button class="btn-add-action" onclick="addCorrectionAction()">+ 添加 Action</button>
+          </div>
+          <button class="btn-submit-correction" onclick="submitFeedback(false)">提交纠正</button>
+        </div>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn-nav" id="btnPrev" onclick="prevTest()">← 上一条</button>
+        <button class="btn-nav" id="btnNext" onclick="nextTest()">下一条 →</button>
+      </div>
+    </div>
+
+    <div class="retrain-section">
+      <h3>模型优化</h3>
+      <p>用户的纠正反馈会保存到 feedback.jsonl。点击下方按钮将纠正数据追加到训练集，然后重新训练模型。</p>
+      <button class="btn-retrain" onclick="exportRetrainData()">导出纠正数据到训练集</button>
+      <button class="btn-clear" onclick="clearFeedback()">清空反馈记录</button>
+      <span id="retrainMsg" style="margin-left: 12px; font-size: 14px;"></span>
+    </div>
+  </div>
+
+  <div class="summary card" id="summaryView">
+    <h2>测试完成 🎉</h2>
+    <div class="summary-stats">
+      <div class="summary-stat"><div class="num" id="sumTotal">0</div><div class="label">总计</div></div>
+      <div class="summary-stat"><div class="num green" id="sumCorrect">0</div><div class="label">正确</div></div>
+      <div class="summary-stat"><div class="num red" id="sumIncorrect">0</div><div class="label">错误</div></div>
+      <div class="summary-stat"><div class="num" id="sumAccuracy">0%</div><div class="label">准确率</div></div>
+    </div>
+    <button class="btn-nav" onclick="restartTest()">重新测试</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let testCases = [];
+let currentIndex = 0;
+let predictions = {};
+let feedbacks = {};
+let stats = { correct: 0, incorrect: 0, total: 0 };
+
+const closureTargets = ["left_front_door","right_front_door","left_rear_door","right_rear_door","all_doors","hood","trunk","fuel_cap"];
+const closureActions = ["open","close"];
+
+async function init() {
+  const res = await fetch('/api/test_cases');
+  testCases = await res.json();
+  await loadStats();
+  showTest(0);
+}
+
+async function loadStats() {
+  const res = await fetch('/api/feedback/stats');
+  stats = await res.json();
+  document.getElementById('headerStats').textContent = `已反馈: ${stats.total} 条 (正确 ${stats.correct} / 错误 ${stats.incorrect})`;
+}
+
+async function showTest(idx) {
+  if (idx >= testCases.length) {
+    showSummary();
+    return;
+  }
+  currentIndex = idx;
+  const tc = testCases[idx];
+
+  document.getElementById('testIndex').textContent = `${idx + 1} / ${testCases.length}`;
+  document.getElementById('progressFill').style.width = `${(idx / testCases.length) * 100}%`;
+
+  const domainTag = document.getElementById('testDomainTag');
+  domainTag.textContent = tc.domain;
+  domainTag.className = 'test-domain-tag domain-' + tc.domain;
+
+  document.getElementById('testText').textContent = tc.text;
+
+  // Expected
+  document.getElementById('expDomain').textContent = tc.domain;
+  document.getElementById('expLabelRow').style.display = tc.label ? 'flex' : 'none';
+  document.getElementById('expLabel').textContent = tc.label || '-';
+  document.getElementById('expActionsRow').style.display = tc.actions ? 'flex' : 'none';
+  document.getElementById('expActions').innerHTML = (tc.actions || []).map(a =>
+    `<span class="action-chip expected">${a.action} → ${a.target}</span>`).join('');
+
+  // Predict
+  if (!predictions[idx]) {
+    document.getElementById('predictionBox').innerHTML = '<span style="color:#999">预测中...</span>';
+    const res = await fetch('/api/predict', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ text: tc.text })
+    });
+    predictions[idx] = await res.json();
+  }
+  const pred = predictions[idx];
+  const box = document.getElementById('predictionBox');
+  box.className = 'prediction-box';
+  box.innerHTML = '';
+
+  const isCorrect = checkCorrect(tc, pred);
+  if (!isCorrect) box.className = 'prediction-box wrong';
+
+  box.innerHTML = `
+    <div class="pred-row"><span class="pred-label">Domain:</span> <span class="pred-value">${pred.domain} <span class="confidence">(${(pred.domain_confidence * 100).toFixed(1)}%)</span></span></div>
+    ${pred.label ? `<div class="pred-row"><span class="pred-label">Label:</span> <span class="pred-value">${pred.label} <span class="confidence">(${(pred.confidence * 100).toFixed(1)}%)</span></span></div>` : ''}
+    ${pred.actions ? `<div class="pred-row"><span class="pred-label">Actions:</span><div class="actions-list">${pred.actions.map(a => `<span class="action-chip">${a.action} → ${a.target} <span class="confidence">(${(a.confidence * 100).toFixed(1)}%)</span></span>`).join('')}</div></div>` : ''}
+  `;
+
+  // Reset feedback UI
+  document.getElementById('correctionForm').classList.remove('active');
+  document.getElementById('btnCorrect').disabled = false;
+  document.getElementById('btnWrong').disabled = false;
+
+  // Restore previous feedback state
+  if (feedbacks[idx] !== undefined) {
+    if (feedbacks[idx]) {
+      document.getElementById('btnCorrect').disabled = true;
+      document.getElementById('btnWrong').disabled = true;
+    }
+  }
+
+  document.getElementById('btnPrev').disabled = idx === 0;
+  document.getElementById('btnNext').textContent = idx === testCases.length - 1 ? '完成 →' : '下一条 →';
+}
+
+function checkCorrect(tc, pred) {
+  if (tc.domain !== pred.domain) return false;
+  if (tc.domain === 'camera') return tc.label === pred.label;
+  if (tc.domain === 'closure') {
+    const exp = JSON.stringify((tc.actions || []).sort((a,b) => a.target.localeCompare(b.target)));
+    const got = JSON.stringify((pred.actions || []).sort((a,b) => a.target.localeCompare(b.target)));
+    return exp === got;
+  }
+  return true;
+}
+
+function submitFeedback(isCorrect) {
+  const tc = testCases[currentIndex];
+  const pred = predictions[currentIndex];
+  feedbacks[currentIndex] = isCorrect;
+
+  const payload = {
+    text: tc.text,
+    expected_domain: tc.domain,
+    expected_label: tc.label,
+    expected_actions: tc.actions,
+    predicted: pred,
+    is_correct: isCorrect,
+  };
+
+  fetch('/api/feedback', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  }).then(() => {
+    showToast(isCorrect ? '已记录: 正确' : '已记录: 错误', isCorrect ? 'success' : 'error');
+    loadStats();
+    if (!isCorrect) {
+      // If marked wrong, show correction form
+      showCorrectionForm();
+    } else {
+      setTimeout(() => nextTest(), 500);
+    }
+  });
+}
+
+function showCorrectionForm() {
+  const tc = testCases[currentIndex];
+  const form = document.getElementById('correctionForm');
+  form.classList.add('active');
+
+  document.getElementById('corrDomain').value = tc.domain;
+  updateCorrectionFields();
+
+  if (tc.domain === 'camera') {
+    document.getElementById('corrLabel').value = tc.label || '';
+  } else if (tc.domain === 'closure') {
+    document.getElementById('corrActionsList').innerHTML = '';
+    (tc.actions || []).forEach(a => addCorrectionAction(a.target, a.action));
+  }
+}
+
+function updateCorrectionFields() {
+  const domain = document.getElementById('corrDomain').value;
+  document.getElementById('corrLabelGroup').style.display = domain === 'camera' ? 'block' : 'none';
+  document.getElementById('corrActionsGroup').style.display = domain === 'closure' ? 'block' : 'none';
+}
+
+function addCorrectionAction(target, action) {
+  const list = document.getElementById('corrActionsList');
+  const div = document.createElement('div');
+  div.className = 'action-edit-row';
+  div.innerHTML = `
+    <select class="corr-target">
+      ${closureTargets.map(t => `<option value="${t}" ${t === target ? 'selected' : ''}>${t}</option>`).join('')}
+    </select>
+    <select class="corr-action">
+      ${closureActions.map(a => `<option value="${a}" ${a === action ? 'selected' : ''}>${a}</option>`).join('')}
+    </select>
+    <button class="btn-remove-action" onclick="this.parentElement.remove()">删除</button>
+  `;
+  list.appendChild(div);
+}
+
+function submitCorrection() {
+  const tc = testCases[currentIndex];
+  const domain = document.getElementById('corrDomain').value;
+  const payload = {
+    text: tc.text,
+    expected_domain: tc.domain,
+    expected_label: tc.label,
+    expected_actions: tc.actions,
+    predicted: predictions[currentIndex],
+    is_correct: false,
+    corrected_domain: domain,
+  };
+
+  if (domain === 'camera') {
+    payload.corrected_label = document.getElementById('corrLabel').value;
+  } else if (domain === 'closure') {
+    const rows = document.querySelectorAll('#corrActionsList .action-edit-row');
+    payload.corrected_actions = Array.from(rows).map(r => ({
+      target: r.querySelector('.corr-target').value,
+      action: r.querySelector('.corr-action').value,
+    }));
+  }
+
+  fetch('/api/feedback', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  }).then(() => {
+    showToast('纠正已提交', 'success');
+    loadStats();
+    document.getElementById('correctionForm').classList.remove('active');
+    document.getElementById('btnCorrect').disabled = true;
+    document.getElementById('btnWrong').disabled = true;
+  });
+}
+
+function nextTest() {
+  if (currentIndex < testCases.length - 1) {
+    showTest(currentIndex + 1);
+  } else {
+    showSummary();
+  }
+}
+
+function prevTest() {
+  if (currentIndex > 0) {
+    showTest(currentIndex - 1);
+  }
+}
+
+function showSummary() {
+  document.getElementById('testView').style.display = 'none';
+  const summary = document.getElementById('summaryView');
+  summary.classList.add('active');
+
+  let correct = 0, incorrect = 0;
+  Object.values(feedbacks).forEach(v => v ? correct++ : incorrect++);
+  const total = correct + incorrect;
+  const accuracy = total > 0 ? Math.round(correct / total * 100) : 0;
+
+  document.getElementById('sumTotal').textContent = testCases.length;
+  document.getElementById('sumCorrect').textContent = correct;
+  document.getElementById('sumIncorrect').textContent = incorrect;
+  document.getElementById('sumAccuracy').textContent = accuracy + '%';
+  document.getElementById('progressFill').style.width = '100%';
+}
+
+function restartTest() {
+  document.getElementById('summaryView').classList.remove('active');
+  document.getElementById('testView').style.display = 'block';
+  showTest(0);
+}
+
+async function exportRetrainData() {
+  const res = await fetch('/api/retrain', { method: 'POST' });
+  const data = await res.json();
+  if (data.status === 'ok') {
+    showToast(`已导出 ${data.samples_added} 条纠正数据到 retrain_data.jsonl`, 'success');
+    document.getElementById('retrainMsg').textContent = data.message;
+  } else {
+    showToast(data.message, 'error');
+  }
+}
+
+async function clearFeedback() {
+  if (!confirm('确认清空所有反馈记录？')) return;
+  await fetch('/api/retrain_data/clear', { method: 'POST' });
+  feedbacks = {};
+  showToast('已清空', 'info');
+  loadStats();
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+init();
+</script>
+</body>
+</html>

@@ -84,7 +84,7 @@ def main():
         num_closure_labels=num_closure_labels,
         num_domains=num_domains,
     )
-    model.load_state_dict(torch.load(model_dir / "model.pt", map_location="cpu"))
+    model.load_state_dict(torch.load(model_dir / "model.pt", map_location="cpu"), strict=False)
     model.eval()
     model.cpu()
 
@@ -146,34 +146,28 @@ def main():
                 f.write(token + "\n")
 
     print(f"Generated: {vocab_path}")
-    copy_if_exists(model_dir / "tokenizer.json", output_dir / "tokenizer.json")
-    copy_if_exists(
-        model_dir / "tokenizer_config.json", output_dir / "tokenizer_config.json"
-    )
-    copy_if_exists(
-        model_dir / "special_tokens_map.json", output_dir / "special_tokens_map.json"
-    )
-    copy_if_exists(model_dir / "id2label.json", output_dir / "id2label.json")
-    copy_if_exists(model_dir / "label2id.json", output_dir / "label2id.json")
-    copy_if_exists(model_dir / "id2domain.json", output_dir / "id2domain.json")
-    copy_if_exists(model_dir / "domain2id.json", output_dir / "domain2id.json")
-    copy_if_exists(
-        model_dir / "closure_id2label.json", output_dir / "closure_id2label.json"
-    )
-    copy_if_exists(
-        model_dir / "closure_label2id.json", output_dir / "closure_label2id.json"
-    )
-    copy_if_exists(model_dir / "model_config.json", output_dir / "model_config.json")
+
+    def load_json(path):
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    labels = {
+        "id2label": load_json(model_dir / "camera_id2label.json"),
+        "id2domain": load_json(model_dir / "id2domain.json"),
+        "closure_id2label": load_json(model_dir / "closure_id2label.json"),
+        "model_config": config,
+    }
+    labels_path = output_dir / "labels.json"
+    with open(labels_path, "w", encoding="utf-8") as f:
+        json.dump(labels, f, ensure_ascii=False, indent=2)
+    print(f"Generated: {labels_path}")
 
     print("Done.")
     print()
-    print("Android assets should include:")
+    print("Android assets (3 files):")
     print(f"- {onnx_path}")
     print(f"- {output_dir / 'vocab.txt'}")
-    print(f"- {output_dir / 'id2label.json'}")
-    print(f"- {output_dir / 'id2domain.json'}")
-    print(f"- {output_dir / 'closure_id2label.json'}")
-    print(f"- {output_dir / 'model_config.json'}")
+    print(f"- {labels_path}")
 
 
 if __name__ == "__main__":

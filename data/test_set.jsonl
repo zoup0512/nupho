@@ -1,0 +1,88 @@
+{"text": "看一下车头", "domain": "camera", "label": "camera.switch_front"}
+{"text": "看后面", "domain": "camera", "label": "camera.switch_rear"}
+{"text": "看左边", "domain": "camera", "label": "camera.switch_left"}
+{"text": "看右边", "domain": "camera", "label": "camera.switch_right"}
+{"text": "看上面", "domain": "camera", "label": "camera.switch_top"}
+{"text": "看车内", "domain": "camera", "label": "camera.switch_interior"}
+{"text": "切回默认画面", "domain": "camera", "label": "camera.switch_default"}
+{"text": "放大一点", "domain": "camera", "label": "camera.zoom_in"}
+{"text": "缩小一点", "domain": "camera", "label": "camera.zoom_out"}
+{"text": "往左调一点", "domain": "camera", "label": "camera.adjust_left"}
+{"text": "往右调一点", "domain": "camera", "label": "camera.adjust_right"}
+{"text": "往上调一点", "domain": "camera", "label": "camera.adjust_up"}
+{"text": "往下调一点", "domain": "camera", "label": "camera.adjust_down"}
+{"text": "转一圈看看", "domain": "camera", "label": "camera.adjust_around"}
+{"text": "打开左前门", "domain": "closure", "actions": [{"target": "left_front_door", "action": "open"}]}
+{"text": "关闭左前门", "domain": "closure", "actions": [{"target": "left_front_door", "action": "close"}]}
+{"text": "打开右前门", "domain": "closure", "actions": [{"target": "right_front_door", "action": "open"}]}
+{"text": "关闭右前门", "domain": "closure", "actions": [{"target": "right_front_door", "action": "close"}]}
+{"text": "打开左后门", "domain": "closure", "actions": [{"target": "left_rear_door", "action": "open"}]}
+{"text": "关闭左后门", "domain": "closure", "actions": [{"target": "left_rear_door", "action": "close"}]}
+{"text": "打开右后门", "domain": "closure", "actions": [{"target": "right_rear_door", "action": "open"}]}
+{"text": "关闭右后门", "domain": "closure", "actions": [{"target": "right_rear_door", "action": "close"}]}
+{"text": "开一下所有车门", "domain": "closure", "actions": [{"target": "all_doors", "action": "open"}]}
+{"text": "关闭所有车门", "domain": "closure", "actions": [{"target": "all_doors", "action": "close"}]}
+{"text": "打开引擎盖", "domain": "closure", "actions": [{"target": "hood", "action": "open"}]}
+{"text": "关闭引擎盖", "domain": "closure", "actions": [{"target": "hood", "action": "close"}]}
+{"text": "打开后备箱", "domain": "closure", "actions": [{"target": "trunk", "action": "open"}]}
+{"text": "关闭后备箱", "domain": "closure", "actions": [{"target": "trunk", "action": "close"}]}
+{"text": "打开油箱盖", "domain": "closure", "actions": [{"target": "fuel_cap", "action": "open"}]}
+{"text": "关闭油箱盖", "domain": "closure", "actions": [{"target": "fuel_cap", "action": "close"}]}
+{"text": "打开后门", "domain": "closure", "actions": [{"target": "left_rear_door", "action": "open"}, {"target": "right_rear_door", "action": "open"}]}
+{"text": "开后车门", "domain": "closure", "actions": [{"target": "left_rear_door", "action": "open"}, {"target": "right_rear_door", "action": "open"}]}
+{"text": "关闭后门", "domain": "closure", "actions": [{"target": "left_rear_door", "action": "close"}, {"target": "right_rear_door", "action": "close"}]}
+{"text": "打开前门", "domain": "closure", "actions": [{"target": "left_front_door", "action": "open"}, {"target": "right_front_door", "action": "open"}]}
+{"text": "关闭前门", "domain": "closure", "actions": [{"target": "left_front_door", "action": "close"}, {"target": "right_front_door", "action": "close"}]}
+{"text": "帮我开一下前两门", "domain": "closure", "actions": [{"target": "left_front_door", "action": "open"}, {"target": "right_front_door", "action": "open"}]}
+{"text": "把后两门关上", "domain": "closure", "actions": [{"target": "left_rear_door", "action": "close"}, {"target": "right_rear_door", "action": "close"}]}
+{"text": "打开左前门和引擎盖", "domain": "closure", "actions": [{"target": "left_front_door", "action": "open"}, {"target": "hood", "action": "open"}]}
+{"text": "今天天气怎么样", "domain": "unknown"}
+{"text": "把空调调到24度", "domain": "unknown"}
+{"text": "播放一首歌", "domain": "unknown"}
+{"text": "导航到公司", "domain": "unknown"}
+{"text": "打电话给张三", "domain": "unknown"}
+{"text": "把车窗打开透透气", "domain": "unknown"}
+{"text": "座椅加热开一下", "domain": "unknown"}
+{"text": "音量调大一点", "domain": "unknown"}
+{"text": "帮我看看前摄像头", "domain": "camera", "label": "camera.switch_front"}
+{"text": "后面有什么", "domain": "camera", "label": "camera.switch_rear"}
+{"text": "左侧视角", "domain": "camera", "label": "camera.switch_left"}
+{"text": "右侧视角", "domain": "camera", "label": "camera.switch_right"}
+{"text": "俯视看一下", "domain": "camera", "label": "camera.switch_top"}
+{"text": "车内摄像头", "domain": "camera", "label": "camera.switch_interior"}
+{"text": "恢复默认", "domain": "camera", "label": "camera.switch_default"}
+{"text": "拉近看看", "domain": "camera", "label": "camera.zoom_in"}
+{"text": "拉远一点", "domain": "camera", "label": "camera.zoom_out"}
+{"text": "镜头往左移", "domain": "camera", "label": "camera.adjust_left"}
+{"text": "镜头往右移", "domain": "camera", "label": "camera.adjust_right"}
+{"text": "镜头往上移", "domain": "camera", "label": "camera.adjust_up"}
+{"text": "镜头往下移", "domain": "camera", "label": "camera.adjust_down"}
+{"text": "环绕看一下", "domain": "camera", "label": "camera.adjust_around"}
+{"text": "弹开前机盖", "domain": "closure", "actions": [{"target": "hood", "action": "open"}]}
+{"text": "合上引擎盖", "domain": "closure", "actions": [{"target": "hood", "action": "close"}]}
+{"text": "掀开后备箱", "domain": "closure", "actions": [{"target": "trunk", "action": "open"}]}
+{"text": "关上后备箱", "domain": "closure", "actions": [{"target": "trunk", "action": "close"}]}
+{"text": "开一下油箱盖", "domain": "closure", "actions": [{"target": "fuel_cap", "action": "open"}]}
+{"text": "关一下油箱盖", "domain": "closure", "actions": [{"target": "fuel_cap", "action": "close"}]}
+{"text": "把所有门都打开", "domain": "closure", "actions": [{"target": "all_doors", "action": "open"}]}
+{"text": "把所有门都关上", "domain": "closure", "actions": [{"target": "all_doors", "action": "close"}]}
+{"text": "开一下左前门呗", "domain": "closure", "actions": [{"target": "left_front_door", "action": "open"}]}
+{"text": "帮我关上右后门", "domain": "closure", "actions": [{"target": "right_rear_door", "action": "close"}]}
+{"text": "打开后排车门", "domain": "closure", "actions": [{"target": "left_rear_door", "action": "open"}, {"target": "right_rear_door", "action": "open"}]}
+{"text": "关闭后排车门", "domain": "closure", "actions": [{"target": "left_rear_door", "action": "close"}, {"target": "right_rear_door", "action": "close"}]}
+{"text": "打开前排车门", "domain": "closure", "actions": [{"target": "left_front_door", "action": "open"}, {"target": "right_front_door", "action": "open"}]}
+{"text": "关闭前排车门", "domain": "closure", "actions": [{"target": "left_front_door", "action": "close"}, {"target": "right_front_door", "action": "close"}]}
+{"text": "开开后门看看", "domain": "closure", "actions": [{"target": "left_rear_door", "action": "open"}, {"target": "right_rear_door", "action": "open"}]}
+{"text": "关一下前两门", "domain": "closure", "actions": [{"target": "left_front_door", "action": "close"}, {"target": "right_front_door", "action": "close"}]}
+{"text": "帮我打开后两门看看", "domain": "closure", "actions": [{"target": "left_rear_door", "action": "open"}, {"target": "right_rear_door", "action": "open"}]}
+{"text": "把前门打开呗", "domain": "closure", "actions": [{"target": "left_front_door", "action": "open"}, {"target": "right_front_door", "action": "open"}]}
+{"text": "后排门关一下", "domain": "closure", "actions": [{"target": "left_rear_door", "action": "close"}, {"target": "right_rear_door", "action": "close"}]}
+{"text": "开开前门吧", "domain": "closure", "actions": [{"target": "left_front_door", "action": "open"}, {"target": "right_front_door", "action": "open"}]}
+{"text": "帮我打开后备箱和引擎盖", "domain": "closure", "actions": [{"target": "trunk", "action": "open"}, {"target": "hood", "action": "open"}]}
+{"text": "打开左前门和右后门", "domain": "closure", "actions": [{"target": "left_front_door", "action": "open"}, {"target": "right_rear_door", "action": "open"}]}
+{"text": "把所有门和引擎盖都打开", "domain": "closure", "actions": [{"target": "all_doors", "action": "open"}, {"target": "hood", "action": "open"}]}
+{"text": "你好", "domain": "unknown"}
+{"text": "今天几号", "domain": "unknown"}
+{"text": "讲个笑话", "domain": "unknown"}
+{"text": "打开雨刮器", "domain": "unknown"}
+{"text": "把大灯打开", "domain": "unknown"}

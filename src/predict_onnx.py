@@ -26,18 +26,20 @@ def predict(text: str, model_dir: str = "outputs/android", max_length: int = 64)
     model_dir = Path(model_dir)
 
     onnx_path = model_dir / "bert.onnx"
-    id2label_path = model_dir / "id2label.json"
-    id2domain_path = model_dir / "id2domain.json"
-    closure_id2label_path = model_dir / "closure_id2label.json"
+    labels_path = model_dir / "labels.json"
 
     if not onnx_path.exists():
         raise FileNotFoundError(f"ONNX model not found: {onnx_path}")
+    if not labels_path.exists():
+        raise FileNotFoundError(f"labels.json not found: {labels_path}")
 
-    id2label = {int(k): v for k, v in load_json(id2label_path).items()}
-    id2domain = {int(k): v for k, v in load_json(id2domain_path).items()}
+    labels_data = load_json(labels_path)
+    id2label = {int(k): v for k, v in labels_data["id2label"].items()}
+    id2domain = {int(k): v for k, v in labels_data["id2domain"].items()}
     closure_id2label = {
-        int(k): v for k, v in load_json(closure_id2label_path).items()
+        int(k): v for k, v in labels_data["closure_id2label"].items()
     }
+    max_length = labels_data.get("model_config", {}).get("max_length", max_length)
 
     tokenizer = AutoTokenizer.from_pretrained(model_dir)
 
@@ -94,21 +96,27 @@ def predict(text: str, model_dir: str = "outputs/android", max_length: int = 64)
 
     elif domain_id == 1:  # closure
         closure_probs = sigmoid(closure_logits)[0]
-        actions = []
+        raw_actions = []
         for i in range(len(closure_probs)):
             if closure_probs[i] > 0.5:
                 label = closure_id2label[i]
                 parts = label.replace("closure.", "").split("_", 1)
                 action = parts[0]
                 target = parts[1] if len(parts) > 1 else ""
-                actions.append(
+                raw_actions.append(
                     {
                         "target": target,
                         "action": action,
                         "confidence": round(float(closure_probs[i]), 4),
                     }
                 )
-        result["actions"] = actions
+        # For same target, keep only the action with higher confidence
+        best_by_target = {}
+        for a in raw_actions:
+            t = a["target"]
+            if t not in best_by_target or a["confidence"] > best_by_target[t]["confidence"]:
+                best_by_target[t] = a
+        result["actions"] = list(best_by_target.values())
 
     return result
 

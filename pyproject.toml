@@ -11,11 +11,13 @@ dependencies = [
     "onnx>=1.21.0",
     "onnxruntime>=1.26.0",
     "onnxscript>=0.7.0",
+    "peft>=0.14.0",
     "pandas>=3.0.3",
     "scikit-learn>=1.8.0",
     "torch>=2.11.0",
     "tqdm>=4.66.5",
     "transformers>=5.8.0",
+    "flask>=3.0.0",
 ]
 
 [[tool.uv.index]]
